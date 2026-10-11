@@ -117,7 +117,7 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 
 ## Defensive Engineering Analysis
 
-### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
+### 1. Interpreting the 0/70 Static Detection Result.
 The absence of static detections across 70 engines on VirusTotal highlights common blind spots in signature-based screening:
 * **Binary Bloat (~25.66 MiB):** Files exceeding standard heuristic inspection limits are frequently processed through truncated analysis pipelines to preserve cloud scanning throughput.
 * **Signature Modification:** The Authenticode status was flagged as `invalid-signature.` While signature invalidity alerts analysts to file tampering, it rarely generates an automated high-severity malware verdict without an existing byte signature.
