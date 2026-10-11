@@ -1,7 +1,7 @@
-# Threat Analysis: Evasive In-Memory DLL Loader (FLEngine_x64.dll)
+# Threat Analysis: FLEngine_x64.dll — Runtime Evasion & Memory Probing Analysis
 # Indicator Manifest: Cryptographic and Fuzzy Hashes
 # Observation Date: 2026-10-11
-# Context: Trojanised FL Studio engine binary (0/70 VirusTotal detection at capture)
+# Context: Modified 64-bit DLL (0/70 VirusTotal detection at time of analysis)
 
 Filename:    FLEngine_x64.dll
 File Size:   26,907,128 bytes (~25.66 MiB)
