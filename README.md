@@ -76,7 +76,7 @@ graph TD
 
 ### 1. Process Invocation & Dependency Discovery
 
-The binary was brokered via `rundll32.exe` targeting multiple exported entry points `(#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr)`.
+The binary was brokered via `rundll32.exe` targeting multiple exported entry points (`#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr`).
 
 * Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared directories` for dependent audio libraries:
      * `dsp_ippv2_x64.dll`
@@ -86,10 +86,10 @@ The binary was brokered via `rundll32.exe` targeting multiple exported entry poi
 * Application Framework Integrity: Process execution initialised `DirectSound DllMain` mutexes and read registry configuration under `HKCU\Software\Image-Line\Shared\Paths`. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
 
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
-Before unpacking its core payload, the loader executes defensive heuristics:
+Prior to secondary execution routines, the loader executes defensive heuristics:
 * **Active Sandbox Interference:** CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
 * **Locale & Timing Checks:** Queried `sortdefault.nls, tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
-* **Security Context Discovery:** Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1033`).
+* **Security Context Discovery:** Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1082`).
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
 Standard Endpoint Detection and Response (EDR) platforms maintain process visibility by inserting inline user-mode hooks (`JMP` instructions) into functions exported by `ntdll.dll`.
@@ -118,12 +118,14 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 
 * Embedded URL Patterns in Memory: Inspection of process memory revealed dormant URLs associated with Image-Line online services (`api.soundcloud.com, auth.%s/fl-studio/token, credit.%s`). These reflect format strings from legitimate audio software features and did not produce live outbound C2 traffic during the sandbox run.
 
+---
+
 ## Defensive Engineering Analysis
 
-### 1. Interpreting the 0/70 Static Detection Result.
+### 1. Interpreting the 0/70 Static Detection Result
 The absence of static detections across 70 engines on VirusTotal demonstrates the limitations of purely signature-based screening:
 * **Binary Size (~25.66 MiB):** Large executables may be subjected to truncated static analysis pipelines in automated high-throughput multi-scanners.
-* **Signature Modification:** The Authenticode status was reported as `invalid-signature.` While an invalid signature flags structural modification or broken certificate chains, signature invalidity alone rarely generates an automated malicious verdict without a recognised threat signature.
+* **Signature Modification:** The Authenticode status was reported as `invalid-signature`. While an invalid signature flags structural modification or broken certificate chains, signature invalidity alone rarely generates an automated malicious verdict without a recognised threat signature.
 * **Packed Overlays:** High entropy and an appended overlay point to packed or compressed data that obscures static file inspection prior to execution.
 
 ### 2. Windows Mitigations: Capabilities and Limitations
@@ -166,7 +168,7 @@ The memory-manipulation behaviour observed in this sample highlights the role of
       * `ILGlyphsEx.ilfont`
 
 * Observed Manifest Artifacts:
-  * FLEngine_x64.dll.manifest
-  * FLEngine_x64.dll.123.Manifest
-  * FLEngine_x64.dll.124.Manifest
-  * FLEngine_x64.dll.2.Manifest
+  * `FLEngine_x64.dll.manifest`
+  * `FLEngine_x64.dll.123.Manifest`
+  * `FLEngine_x64.dll.124.Manifest`
+  * `FLEngine_x64.dll.2.Manifest`
