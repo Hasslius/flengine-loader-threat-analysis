@@ -1,9 +1,11 @@
 # Threat Analysis: Evasive In-Memory DLL Loader (`FLEngine_x64.dll`)
 
 ## Executive Summary
-This report analyses an evasive commodity dynamic link library (`FLEngine_x64.dll`) delivered via a trojanised digital audio workstation (DAW) release. Despite achieving a **0/70 (Undetected)** static detection rating on VirusTotal, dynamic execution in the CAPE sandbox revealed an evasive in-memory loader. 
+This report analyses a 64-bit Windows dynamic-link library (`FLEngine_x64.dll`) reportedly distributed within a trojanised digital audio workstation (DAW) release. Static multi-engine scanning on VirusTotal returned a **0/70 (Undetected)** rating at the time of analysis. However, behavioral analysis via the CAPE and Zenbox sandboxes revealed multiple indicators of defence evasion and low-level memory probing.
 
-The binary deploys multi-stage evasion tactics, including direct kernel syscalls (`T1106`), Read-Write-Execute (RWX) memory stomping (`T1055`), and automated sandbox suppression (`T1497`) to bypass user-mode Endpoint Detection and Response (EDR) hooks before harvesting local browser credentials and session tokens.
+Dynamic execution identified direct system calls (`T1106`), Read-Write-Execute (RWX) memory allocations, automated sandbox-thread suspension routines (`T1497`), and repetitive allocation loops returning `CONFLICTING_ADDRESSES` (`T1055`). While the binary contains authentic application strings and export names associated with Image-Line's FL Studio engine, the combination of a broken Authenticode signature, anti-monitoring behaviour, and direct syscall execution points to a weaponised or trojanised carrier module.
+
+This report documents the observed runtime indicators, separates demonstrated execution behavior from unverified payload hypotheses, and evaluates the capabilities and limitations of hardware-enforced Windows mitigations.
 
 ---
 
@@ -12,30 +14,35 @@ The binary deploys multi-stage evasion tactics, including direct kernel syscalls
 | Attribute | Value |
 | :--- | :--- |
 | **Filename** | `FLEngine_x64.dll` |
-| **Original Application** | FL Studio Audio Engine (Trojanised) |
+| **Reported Context** | FL Studio Audio Engine (Trojanised Release / Masquerading) |
 | **File Format** | PE32+ executable (DLL) (GUI) x86-64 |
-| **File Size** | 26,907,128 bytes (~25.66 MB) |
+| **File Size** | 26,907,128 bytes (~25.66 MiB) |
 | **MD5** | `60a4e5191250b2f4dbaf33c1bc11ca7b` |
 | **SHA-1** | `295f97e514304345e431023a8d72063309aab1c2` |
 | **SHA-256** | `85cc415bb094e8af2bb0bf27fb7d2021cdb9424c516be1f11282b57ee1ee5fdf` |
 | **CRC32** | `3618943D` |
 | **SSDEEP** | `196608:3SOxFpvMgzAG3hVw1AQK5SQQMMkw10dm5LENsyzkD1P:1dvMgEkE1A55SQQMC0w5LENsBpP` |
-| **Authenticode Status** | `invalid-signature` (Original vendor signature broken by modifications) |
-| **Static AV Score** | **0 / 70 Security Vendors Flagged** (Undetected across all engines) |
+| **Authenticode Status** | `invalid-signature` (Reported; indicates file tampering or modified digital signature) |
+| **Static AV Score** | **0 / 70 Vendors Flagged** (Reported via VirusTotal at the time of submission) |
+
+> **Analysis Scope & Limitations:**  
+> The telemetry analyzed reflects dynamic sandbox execution logs (CAPE and Zenbox). While CAPE recorded behavioral signatures for memory probing and user-mode evasion, CAPA returned no static capability results. Hypotheses regarding post-exploitation payloads (such as credential access or active exfiltration) require further validation against live network captures and memory dumps.
 
 ---
 
-## MITRE ATT&CK Mapping
+## MITRE ATT&CK Mapping (Provisional)
 
-| Tactic | ID | Technique | Observed Mechanism / Telemetry Indicator |
+The mappings below correlate observed sandbox signatures with MITRE ATT&CK techniques. Detections reflect observed execution attempts; successful execution across every technique remains subject to confirmation.
+
+| Tactic | ID | Technique | Observed Behavior / Telemetry Indicator |
 | :--- | :--- | :--- | :--- |
-| **Persistence / Escalation** | `T1574` | Hijack Execution Flow | Abuses DLL Search Order; loaded from untrusted user directories via `rundll32.exe`. |
-| **Defense Evasion** | `T1106` | Native API | Executes direct assembly syscalls bypassing user-mode `ntdll.dll` API hooks. |
-| **Defense Evasion / Escalation** | `T1055` | Process Injection | Loops failed allocations returning `CONFLICTING_ADDRESSES` (code cave hunting / module stomping). |
-| **Defense Evasion** | `T1027` / `T1027.002` | Obfuscation / Packing | Packed binary structure with non-standard section headers, high entropy, and an appended overlay. |
-| **Defense Evasion** | `T1497` | Virtualisation / Sandbox Evasion | Target thread suspension against Cuckoo Sandbox hooks; local time and timezone queries. |
-| **Discovery** | `T1033` / `T1082` | System & User Discovery | Reads process tokens for UAC elevation; queries keyboard layouts and registry language keys. |
-| **Command & Control** | `T1071` | Application Layer Protocol | Outbound HTTP traffic initiated directly, absent from standard monitor API logs. |
+| **Defence Evasion** | `T1574.001` | DLL Search Order Hijacking | `dllload_suspicious_directory`; module loaded from user desktop via `rundll32.exe`. Probes multiple local and system paths. |
+| **Defence Evasion** | `T1106` | Native API | `direct_syscall_evasion`; executes direct assembly system calls, bypassing user-mode `ntdll.dll` API hooks. |
+| **Defence Evasion** | `T1055` | Process Injection | `injection_module_stomping_probing`; loops of failed RWX memory allocations returning `CONFLICTING_ADDRESSES`. |
+| **Defence Evasion** | `T1027` / `T1027.002` | Obfuscated Files / Software Packing | `packer_unknown_pe_section_name`, `packer_entropy`; anomalous section headers, high entropy, and an appended overlay. |
+| **Defence Evasion** | `T1497.001` / `T1497.003` | Virtualisation/Sandbox Evasion | Thread suspension targeting Cuckoo monitoring threads; environmental queries and timing-delay checks. |
+| **Discovery** | `T1033` / `T1082` | System & User Discovery | Queries process token information for elevation status; queries registry language keys, `sortdefault.nls`, and keyboard layouts. |
+| **Command and Control** | `T1071.001` | Web Protocols (Provisional) | HTTP requests initiated during analysis. Destination traffic correlates with certificate validation; payload C2 remains unconfirmed. |
 
 ---
 
@@ -43,66 +50,90 @@ The binary deploys multi-stage evasion tactics, including direct kernel syscalls
 
 ```mermaid
 graph TD
-    A[Trojanized DAW Repack] --> B[rundll32.exe loads FLEngine_x64.dll - T1574]
+    A[Trojanised DAW Repack] --> B[rundll32.exe executes FLEngine_x64.dll - T1574.001]
     
-    subgraph Execution & Evasion
-        B --> C[1. Probes Sibling DLLs: QuickFontCache, dsp_ippv2]
-        B --> D[2. Sandbox & Host Enumeration: Cuckoo checks, locale - T1497]
-        B --> E[3. Direct Syscalls: Bypasses ntdll.dll EDR hooks - T1106]
-        B --> F[4. RWX Module Stomping: Code cave probing - T1055]
+    subgraph Execution & Environmental Triage
+        B --> C[Probes Sibling DLLs: QuickFontCache, dsp_ippv2, Blend2D]
+        B --> D[Host & Timing Enumeration: Token checks, locale verification]
+        B --> E[Sandbox Interference: Attempts suspension of Cuckoo threads - T1497]
     end
 
-    E & F --> G[In-Memory Infostealer Decryption]
+    subgraph Memory Operations & Low-Level Evasion
+        B --> F[Direct Assembly Syscalls: Bypasses user-mode ntdll hooks - T1106]
+        F --> G[Creates RWX Memory Allocations]
+        G --> H[Address Probing: CONFLICTING_ADDRESSES loops - T1055]
+    end
 
-    subgraph Harvesting & C2
-        G --> H[Harvests Chromium Stores: Cookies, Login Data via DPAPI]
-        G --> I[Sweeps Discord Tokens & Session State]
-        H & I --> J[Covert HTTP POST Exfiltration - T1071]
+    subgraph Observed Network Telemetry
+        B --> I[HTTP GET Requests Initiated]
+        I --> J[Windows Update & Certificate Validation: ctldl, ocsp.digicert]
+        H -.-> K[Potential In-Memory Staging - Requires Memory Dump Validation]
     end
 ```
 
-### 1. Delivery & Execution Brokering (`T1574`)
-The primary payload masquerades as `FLEngine_x64.dll`, the core runtime sound processing module of FL Studio. 
-* Execution is brokered via the legitimate Windows binary `rundll32.exe`.
-* Upon initialisaation, the loader scans the local workspace for authentic secondary application modules (`dsp_ippv2_x64.dll`, `QuickFontCache_x64.dll`, `Blend2D.dll`). By maintaining standard dependency loading, the process mimics authentic application startup while spawning secondary threads for payload orchestration.
+### 1. Delivery & Execution Context (T1574.001)
+The binary was brokered via rundll32.exe targeting multiple exported entry points (#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr).
+* Dependency Probing: During startup, the process systematically probed paths across the local directory (C:\Users\<USER>\Desktop\), System32, and Shared directories for dependent audio libraries:
+* dsp_ippv2_x64.dll
+* QuickFontCache_x64.dll
+* Blend2D.dll
+* ILGlyphsEx.ilfont
+* Legitimate Artifact Coexistence: Process execution initialized DirectSound DllMain mutexes and read registry configuration under HKCU\Software\Image-Line\Shared\Paths. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
 
-### 2. Sandbox Evasion & Environmental Guardrails (`T1497`)
+### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Before unpacking its core payload, the loader executes defensive heuristics:
-* **Active Hook Suppression:** Enumerates active threads looking for monitoring instrumentation (specifically targeting Cuckoo Sandbox agent routines) and attempts thread suspension.
-* **Geofencing & Time Verification:** Reads language subkeys, `tzres.dll.mui`, `sortdefault.nls`, and queries the local keyboard layout. It executes a timing verification loop comparing system tick counts; if an artificial or non-targeted environment is identified, execution halts silently.
-* **Token Checks:** Queries token privileges to assess whether it operates in an elevated UAC context.
+* **Active Sandbox Interference: CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
+* **Locale & Timing Checks: Queried sortdefault.nls, tzres.dll.mui, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
+* **Security Context Discovery: Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (T1033).
 
-### 3. User-Mode Hook Evasion via Direct Syscalls (`T1106`)
-Standard endpoint security agents monitor user-mode operations by placing inline trampolines (`JMP` hooks) into exported functions inside `ntdll.dll` (e.g., `NtAllocateVirtualMemory`). 
-* This binary bypasses user-mode monitoring by resolving System Service Numbers (SSNs) and executing direct assembly `syscall` instructions.
-* By jumping directly from the payload module into kernel space, memory allocation occurs without passing through `ntdll.dll`, leaving user-land API monitors blind to the staging phase.
+### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
+Standard Endpoint Detection and Response (EDR) platforms maintain process visibility by inserting inline user-mode hooks (JMP instructions) into functions exported by ntdll.dll.
+* The sandbox captured the signature direct_syscall_evasion.
+* The loader dynamically resolved System Service Numbers (SSNs) and issued assembly-level syscall instructions directly. This allowed thread and memory allocation calls to transition directly into kernel space, bypassing user-mode API monitors on that execution path.
 
 ### 4. Code Cave Probing & Module Stomping (`T1055`)
-In the CAPE sandbox report, the loader generated repetitive allocation loops returning `CONFLICTING_ADDRESSES` across high-memory address space:
-* Rather than allocating conspicuous, unbacked private memory ranges, the loader proactively sweeps loaded library modules for slack space ("code caves").
-* It writes decrypted shellcode directly over benign sections of mapped DLLs (module stomping), disguising runtime memory calls as legitimate library activity.
+CAPE logged two high-severity memory events:
+* Creation of Read-Write-Execute (RWX) memory pages.
+* Repetitive allocation loops returning CONFLICTING_ADDRESSES across high-memory address space.
+* Investigative Assessment: This allocation pattern is consistent with address-space probing and code-cave scanning (module stomping). However, without comparative memory dumps proving that existing DLL text sections were overwritten and executed, this behaviour is formally classified as in-memory staging probing rather than confirmed code injection.
 
 ---
 
-## Defensive Engineering Analysis
+## Network Telemetry & Traffic Analysis
 
-### 1. The 0/70 Static Detection Blind Spot
-The sample was evaluated across 70 antivirus vendors on VirusTotal, returning **0 detections**. This failure of static analysis highlights several key factors:
-* **File Bloat:** At **25.66 MB**, the file exceeds standard static scan thresholds for many cloud-based scanners.
-* **Authenticode Abuse:** While the file was flagged with an `invalid-signature`, signature breakage alone rarely triggers a high-severity static heuristic without a known malicious byte pattern.
-* **Encrypted Overlay:** The actual malicious logic was stored in packed, high-entropy PE sections, remaining unreadable to signature engines until dynamic runtime unpacking.
+During execution, network traffic was captured across DNS, TCP, and HTTP protocols. Analysis of the destinations indicates that the captured traffic predominantly reflects standard Windows operating system activity and certificate revocation checks rather than established Command and Control (C2) communications:
 
-### 2. Architectural Gap: Kernel-Mode Hardware-Enforced Stack Protection & HVCI
-The persistence of in-memory evasion relies on gaps in OS-level memory protections:
+| Destination Host / IP | Port / Protocol | Observed Role / Activity |
+| :--- | :--- | :--- |
+| 8.8.8.8 | 53 / UDP | Google Public DNS resolution. |
+| ctldl.windowsupdate.com (92.223.96.6) | 80 / HTTP | Microsoft Disallowed Certificate Trust List retrieval (disallowedcertstl.cab). |
+| ocsp.digicert.com (23.11.33.159) | 80 / HTTP | Online Certificate Status Protocol (OCSP) verification request. |
+| oneocsp.microsoft.com (204.79.197.203) | 80 / HTTP | Microsoft OCSP certificate validation request. |
+| 172.16.1.1 | 1688 / TCP | Internal private network connection (frequently associated with sandbox KMS activation). |
 
-#### The Default Windows Posture
-On many consumer Windows 11 installations, **Kernel-mode Hardware-enforced Stack Protection** and **Memory Integrity (HVCI)** are set to **Off** by default. Microsoft often defers automatic activation due to legacy kernel-mode drivers (such as older anti-cheat modules, custom peripheral software, and motherboard utilities) that fail compatibility checks.
+* Embedded URL Patterns in Memory: Inspection of process memory revealed dormant URLs associated with Image-Line online services (api.soundcloud.com, auth.%s/fl-studio/token, credit.%s). These reflect format strings from legitimate audio software features and did not produce live outbound C2 traffic during the sandbox run.
 
-#### Attack Surface Exposed
-* **Without HVCI:** The system does not strictly enforce **W^X (Write XOR Execute)** at the hypervisor level. The loader can freely allocate `RWX` memory pages and stomp existing module code.
-* **Without Hardware-Enforced Stack Protection:** The system relies on software-based stack canaries (`/GS`). Canaries only prevent linear buffer overwrites; they provide zero protection against Return-Oriented Programming (ROP) gadgets, pointer hijacking, or direct jumps into stomped module caves.
+##Defensive Engineering Analysis
 
-#### Hardware-Enforced Mitigation (Intel CET / AMD Shadow Stack)
+### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
+The absence of static detections across 70 engines on VirusTotal highlights common blind spots in signature-based screening:
+* **Binary Bloat (~25.66 MiB): Files exceeding standard heuristic inspection limits are frequently processed through truncated analysis pipelines to preserve cloud scanning throughput.
+* **Signature Modification:** The Authenticode status was flagged as `invalid-signature.` While signature invalidity alerts analysts to file tampering, it rarely generates an automated high-severity malware verdict without an existing byte signature.
+* **Packed Overlays:** High-entropy section data and appended overlays obscure payload intent until unpacked dynamically in memory.
+
+### 2. Windows Mitigations: Capabilities and Limitations
+The evasive memory techniques observed in this sample highlight the critical role of layered host configurations. However, security controls must be understood within their actual operating boundaries:
+
+#### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
+* **Scope:** HVCI uses Virtualisation-Based Security (VBS) to enforce Write XOR Execute page protections strictly within kernel mode.
+* **Limitation:** HVCI is not a universal user-mode code integrity control. While critical for protecting the kernel against vulnerable drivers (BYOVD), it does not natively prevent user-space processes from allocating private RWX memory or performing user-mode module stomping.
+
+#### Hardware-Enforced Stack Protection (Intel CET / AMD Shadow Stack)
+* **1:** Application Control (WDAC): Enforce Windows Defender Application Control policies to prevent unsigned or invalidly signed binaries from executing via rundll32.exe.
+* **2** Attack Surface Reduction (ASR): Enable rules blocking execution of obfuscated scripts and child processes spawned from common administrative binaries.
+* **3** Kernel Telemetry & EDR: Maintain endpoint sensors that correlate kernel-level process creation and thread-injection telemetry (e.g., Microsoft-Windows-Threat-Intelligence ETW) rather than relying exclusively on user-mode ntdll.dll API hooks.
+
+#### Recommended Layered Controls
 Enabling Kernel-mode Hardware-enforced Stack Protection leverages CPU microarchitecture (Intel 11th Gen+ / AMD Ryzen 5000+) to instantiate a hardware-isolated **Shadow Stack**:
 * Every `CALL` instruction pushes return addresses to both the normal stack and the hardware-isolated shadow stack.
 * Every `RET` instruction compares both targets.
@@ -117,10 +148,17 @@ Enabling Kernel-mode Hardware-enforced Stack Protection leverages CPU microarchi
 * **SHA-1:** `295f97e514304345e431023a8d72063309aab1c2`
 * **MD5:** `60a4e5191250b2f4dbaf33c1bc11ca7b`
 
-### Host Artifacts
-* Staged dynamic link library: `FLEngine_x64.dll`
-* Abused execution binary: `%SystemRoot%\System32\rundll32.exe`
-* Target DLL probing artifacts:
+### Host & Execution Artifacts
+* Staged File: `FLEngine_x64.dll`
+* Execution Utility: `%SystemRoot%\System32\rundll32.exe`
+* Probed Dependencies (Contextual):
   * `QuickFontCache_x64.dll`
   * `dsp_ippv2_x64.dll`
   * `Blend2D.dll`
+  * `ILGlyphsEx.ilfont`
+
+* Observed Manifest Artifacts:
+  * FLEngine_x64.dll.manifest
+  * FLEngine_x64.dll.123.Manifest
+  * FLEngine_x64.dll.124.Manifest
+  * FLEngine_x64.dll.2.Manifest
