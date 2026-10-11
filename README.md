@@ -12,7 +12,7 @@ The binary deploys multi-stage evasion tactics, including direct kernel syscalls
 | Attribute | Value |
 | :--- | :--- |
 | **Filename** | `FLEngine_x64.dll` |
-| **Original Application** | FL Studio Audio Engine (Trojanized) |
+| **Original Application** | FL Studio Audio Engine (Trojanised) |
 | **File Format** | PE32+ executable (DLL) (GUI) x86-64 |
 | **File Size** | 26,907,128 bytes (~25.66 MB) |
 | **MD5** | `60a4e5191250b2f4dbaf33c1bc11ca7b` |
