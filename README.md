@@ -31,7 +31,7 @@ Because memory-allocation probing and anti-monitoring routines coexist with auth
 | **Static AV Detection** | **0 / 70 Engines Flagged** (Reported via VirusTotal at time of analysis, October 2026) |
 
 > **Telemetry Limitations:**  
-> Analysis is derived from automated CAPE and Zenbox sandbox executions. CAPA returned no capability matches. Unpacking mechanisms, complete memory writes, process attribution for network traffic, and active data-exfiltration paths were not directly observed in the provided telemetry and remain hypotheses requiring deeper reverse engineering.
+> Analysis is derived from automated CAPE and Zenbox sandbox executions. Dynamic execution logged active anti-monitoring routines (attempted Cuckoo thread suspension) and an early process termination following system-time evaluation. In automated analysis environments, successful evasion checks frequently trigger dormant execution paths or deliberate early exits. Consequently, the absence of observed secondary stage drops, active credential access, or network exfiltration in sandbox telemetry is consistent with sandbox-induced execution suppression rather than proof of benign intent.
 
 ---
 
@@ -67,9 +67,14 @@ graph TD
         G --> H[Address Probing: CONFLICTING_ADDRESSES allocation loops - T1055]
     end
 
-    subgraph Concurrent Sandbox Network Activity
-        I[Network Activity Observed in Sandbox - Process Attribution Unconfirmed] --> J[Windows Trust & Certificate Validation: ctldl, ocsp.digicert]
-        H -.-> K[Potential In-Memory Staging - Requires Memory Dump Corroboration]
+    subgraph Execution Outcome in Sandbox
+        E & D --> L{Sandbox / Timing Guard Triggered?}
+        L -->|Yes: Execution Halted| M[Early Termination / Dormancy Observed]
+        L -.->|No: Hypothetical Bare-Metal Path| K[Secondary Staging / C2 - Suppressed in Sandbox]
+    end
+
+    subgraph Concurrent Sandbox OS Traffic
+        N[Ambient Sandbox OS Activity] --> J[Windows Trust & Certificate Validation: ctldl, ocsp.digicert]
     end
 ```
 
@@ -89,6 +94,9 @@ During execution, the sandbox registered several defensive heuristics:
 * **Active Sandbox Interference:** CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
 * **Locale & Timing Checks:** Queried `sortdefault.nls`, `tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
 * **Security Context Discovery:** Inspected process token attributes to check for administrative privileges or elevation status (`T1082`).
+
+**Analytical Assessment on Payload Suppression:**  
+When evasive loaders identify virtualisation indicators or monitoring threads, standard defensive routines dictate silent termination or infinite dormancy to prevent execution inside automated sandboxes. The early process exit observed immediately after local time and thread enumeration strongly suggests that the sample identified the sandbox environment and aborted execution prior to deploying any packed secondary stages.
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
 Endpoint security agents typically monitor user-mode operations by inserting inline hooks (`JMP` instructions) into Windows native API wrappers in `ntdll.dll`.
@@ -115,7 +123,8 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 | `oneocsp.microsoft.com (204.79.197.203)` | `80 / HTTP` | Microsoft OCSP certificate validation request. |
 | `172.16.1.1` | `1688 / TCP` | Internal private network connection (frequently associated with sandbox KMS activation). |
 
-* The supplied network records do not establish command-and-control communication. The memory-resident URL patterns (`api.soundcloud.com`, `auth.%s/fl-studio/token`, `credit.%s`) are consistent with application-related services, but their use during execution has not been demonstrated. Process attribution for individual network requests was not confirmed in the available summary.
+***Assessment of Network Inactivity:**  
+The supplied network records do not establish command-and-control (C2) communication; the captured HTTP traffic was limited to routine Windows trust validation. However, this network profile must be interpreted alongside the observed anti-analysis behaviour. Because the loader exhibited sandbox-detection indicators and exited early, subsequent operational phases—such as payload staging, C2 check-in, or telemetry beaconing were likely suppressed before network sockets could be instantiated by secondary routines.
 
 ---
 
