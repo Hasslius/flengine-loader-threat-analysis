@@ -1,0 +1,12 @@
+# Threat Analysis: FLEngine_x64.dll Evasive Loader
+# File Hashes (Observed Sample)
+
+Filename: FLEngine_x64.dll
+File Size: 26,907,128 bytes (~25.66 MB)
+File Type: PE32+ executable (DLL) (GUI) x86-64
+
+MD5:    60a4e5191250b2f4dbaf33c1bc11ca7b
+SHA1:   295f97e514304345e431023a8d72063309aab1c2
+SHA256: 85cc415bb094e8af2bb0bf27fb7d2021cdb9424c516be1f11282b57ee1ee5fdf
+CRC32:  3618943D
+SSDEEP: 196608:3SOxFpvMgzAG3hVw1AQK5SQQMMkw10dm5LENsyzkD1P:1dvMgEkE1A55SQQMC0w5LENsBpP
