@@ -5,8 +5,8 @@ This report examines the 64-bit Windows dynamic-link library (`FLEngine_x64.dll`
 
 Dynamic analysis identified several low-level runtime behaviours warranting technical investigation:
 - Reported behaviour consistent with direct system calls (`T1106`), which may bypass user-mode API monitoring hooks on the corresponding execution path.
-- Allocation of Read-Write-Execute (`RWX`) memory pages and repeated failed allocation loops returning `CONFLICTING_ADDRESSES` (`T1055` — provisional).
-- Heuristic evasion indicators, including attempted suspension of sandbox monitoring threads (`T1497` — provisional) and environment-timing queries.
+- Allocation of Read-Write-Execute (`RWX`) memory pages and repeated failed allocation loops returning `CONFLICTING_ADDRESSES` (`T1055`).
+- Heuristic evasion indicators, including attempted suspension of sandbox monitoring threads (`T1497`) and environment-timing queries.
 
 Additionally, static strings, registry paths (`HKCU\Software\Image-Line\Shared\Paths`), audio-specific export routines (`CreateFruityInstance`), and embedded URL format strings link the binary to Image-Line's FL Studio engine. Captured HTTP traffic during sandbox execution was consistent with standard Windows certificate validation (`ctldl.windowsupdate.com`, `ocsp.digicert.com`); the available telemetry does not establish command-and-control communication or data exfiltration.
 
@@ -127,7 +127,7 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 | `172.16.1.1` | `1688 / TCP` | Internal private network connection (frequently associated with sandbox KMS activation). |
 
 > **Assessment of Network Inactivity:**  
-> The supplied network records do not establish command-and-control (C2) communication; the captured HTTP traffic was limited to routine Windows trust validation. However, this network profile must be interpreted alongside the observed anti-analysis behaviour. Because the loader exhibited sandbox-detection indicators and exited early, subsequent operational phases—such as payload staging, C2 check-in, or telemetry beaconing were likely suppressed before network sockets could be instantiated by secondary routines.
+> The supplied network records do not establish command-and-control (C2) communication; the captured HTTP traffic was limited to routine Windows trust validation. However, this network profile must be interpreted alongside the observed anti-analysis behaviour. Because the loader exhibited sandbox-detection indicators and exited early, subsequent operational phases, such as payload staging, C2 check-in, or telemetry beaconing were likely suppressed before network sockets could be instantiated by secondary routines.
 
 ---
 
