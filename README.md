@@ -76,10 +76,10 @@ graph TD
 The binary was brokered via `rundll32.exe` targeting multiple exported entry points `(#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr)`.
 
 * Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared directories` for dependent audio libraries:
- * `dsp_ippv2_x64.dll`
- * `QuickFontCache_x64.dll`
- * `Blend2D.dll`
- * `ILGlyphsEx.ilfont`
+     * `dsp_ippv2_x64.dll`
+     * `QuickFontCache_x64.dll`
+     * `Blend2D.dll`
+     * `ILGlyphsEx.ilfont`
 * Legitimate Artifact Coexistence: Process execution initialized `DirectSound DllMain` mutexes and read registry configuration under `HKCU\Software\Image-Line\Shared\Paths`. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
 
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
@@ -115,7 +115,7 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 
 * Embedded URL Patterns in Memory: Inspection of process memory revealed dormant URLs associated with Image-Line online services (`api.soundcloud.com, auth.%s/fl-studio/token, credit.%s`). These reflect format strings from legitimate audio software features and did not produce live outbound C2 traffic during the sandbox run.
 
-##Defensive Engineering Analysis
+## Defensive Engineering Analysis
 
 ### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
 The absence of static detections across 70 engines on VirusTotal highlights common blind spots in signature-based screening:
