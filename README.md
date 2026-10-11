@@ -26,7 +26,7 @@ This report documents the observed runtime indicators, separates demonstrated ex
 | **Static AV Score** | **0 / 70 Vendors Flagged** (Reported via VirusTotal at the time of submission) |
 
 > **Analysis Scope & Limitations:**  
-> The telemetry analyzed reflects dynamic sandbox execution logs (CAPE and Zenbox). While CAPE recorded behavioral signatures for memory probing and user-mode evasion, CAPA returned no static capability results. Hypotheses regarding post-exploitation payloads (such as credential access or active exfiltration) require further validation against live network captures and memory dumps.
+> The telemetry analysed reflects dynamic sandbox execution logs (CAPE and Zenbox). While CAPE recorded behavioural signatures for memory probing and user-mode evasion, CAPA returned no static capability results. Hypotheses regarding post-exploitation payloads (such as credential access or active exfiltration) require further validation against live network captures and memory dumps.
 
 ---
 
