@@ -84,9 +84,9 @@ The binary was brokered via `rundll32.exe` targeting multiple exported entry poi
 
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Before unpacking its core payload, the loader executes defensive heuristics:
-* **Active Sandbox Interference: CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
-* **Locale & Timing Checks: Queried `sortdefault.nls, tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
-* **Security Context Discovery: Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1033`).
+* **Active Sandbox Interference:** CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
+* **Locale & Timing Checks:** Queried `sortdefault.nls, tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
+* **Security Context Discovery:** Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1033`).
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
 Standard Endpoint Detection and Response (EDR) platforms maintain process visibility by inserting inline user-mode hooks (`JMP` instructions) into functions exported by `ntdll.dll`.
