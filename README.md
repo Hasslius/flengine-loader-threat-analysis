@@ -126,8 +126,8 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 | `oneocsp.microsoft.com (204.79.197.203)` | `80 / HTTP` | Microsoft OCSP certificate validation request. |
 | `172.16.1.1` | `1688 / TCP` | Internal private network connection (frequently associated with sandbox KMS activation). |
 
-***Assessment of Network Inactivity:**  
-The supplied network records do not establish command-and-control (C2) communication; the captured HTTP traffic was limited to routine Windows trust validation. However, this network profile must be interpreted alongside the observed anti-analysis behaviour. Because the loader exhibited sandbox-detection indicators and exited early, subsequent operational phases—such as payload staging, C2 check-in, or telemetry beaconing were likely suppressed before network sockets could be instantiated by secondary routines.
+> **Assessment of Network Inactivity:**  
+> The supplied network records do not establish command-and-control (C2) communication; the captured HTTP traffic was limited to routine Windows trust validation. However, this network profile must be interpreted alongside the observed anti-analysis behaviour. Because the loader exhibited sandbox-detection indicators and exited early, subsequent operational phases—such as payload staging, C2 check-in, or telemetry beaconing were likely suppressed before network sockets could be instantiated by secondary routines.
 
 ---
 
