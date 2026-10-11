@@ -3,23 +3,19 @@
 # Observation Date: 2026-10-11
 # Context: Trojanised FL Studio engine binary (0/70 VirusTotal detection at capture)
 
-# --- File Details ---
 Filename:    FLEngine_x64.dll
 File Size:   26,907,128 bytes (~25.66 MiB)
 File Type:   PE32+ executable (DLL) (GUI) x86-64
 
-# --- Cryptographic Hashes ---
 MD5:         60a4e5191250b2f4dbaf33c1bc11ca7b
 SHA-1:       295f97e514304345e431023a8d72063309aab1c2
 SHA-256:     85cc415bb094e8af2bb0bf27fb7d2021cdb9424c516be1f11282b57ee1ee5fdf
 SHA3-384:    8986ce3a64452b73c6200261363ca5a9db354705776a78dc18b905cbb4a48d60b32d4eb6b135850614ce9ed097182693
 CRC32:       3618943D
 
-# --- Similarity & Fuzzy Hashes ---
 SSDEEP:      196608:3SOxFpvMgzAG3hVw1AQK5SQQMMkw10dm5LENsyzkD1P:1dvMgEkE1A55SQQMC0w5LENsBpP
 TLSH:        T1E1476B6F31E49118C06BC239C2674F55EB33B0A80B31D7FB529016582F66AD8AE7E771
 
-# --- Automated Ingestion Feed (Raw Hashes) ---
 85cc415bb094e8af2bb0bf27fb7d2021cdb9424c516be1f11282b57ee1ee5fdf
 295f97e514304345e431023a8d72063309aab1c2
 60a4e5191250b2f4dbaf33c1bc11ca7b
