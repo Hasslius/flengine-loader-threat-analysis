@@ -76,7 +76,7 @@ graph TD
 
 ### 1. Process Invocation & Dependency Discovery
 
-The binary was brokered via `rundll32.exe` targeting multiple exported entry points (`#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr`).
+The binary was brokered via `rundll32.exe` targeting multiple exported entry points (`#1`, `CreateFruityInstance`, `__dbk_fcall_wrapper`, `dbkFCallWrapperAddr`).
 
 * Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared directories` for dependent audio libraries:
      * `dsp_ippv2_x64.dll`
@@ -88,7 +88,7 @@ The binary was brokered via `rundll32.exe` targeting multiple exported entry poi
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Prior to secondary execution routines, the loader executes defensive heuristics:
 * **Active Sandbox Interference:** CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
-* **Locale & Timing Checks:** Queried `sortdefault.nls, tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
+* **Locale & Timing Checks:** `Queried sortdefault.nls`, `tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
 * **Security Context Discovery:** Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1082`).
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
@@ -141,7 +141,7 @@ The memory-manipulation behaviour observed in this sample highlights the role of
 * **Default Configurations:** While enabled by default on clean installations of modern Windows 11 OEM builds, this feature is frequently disabled on consumer systems or upgrades due to compatibility conflicts with legacy third-party drivers (such as older peripheral software or legacy anti-cheat modules).
 
 #### Layered Defensive Recommendations
-* **Application Control (WDAC):** Restrict execution to explicitly approved binaries, preventing untrusted DLLs from running via `rundll32.exe.`
+* **Application Control (WDAC):** Restrict execution to explicitly approved binaries, preventing untrusted DLLs from running via `rundll32.exe`.
 * **Attack Surface Reduction (ASR):** Deploy Attack Surface Reduction (ASR) rules and audit process-creation command lines involving administrative binaries executing unverified dynamic libraries.
 * **Kernel Telemetry & EDR:** Maintain EDR sensors that monitor kernel-level thread creation and memory-protection transitions rather than relying solely on user-mode API hooking.
 
