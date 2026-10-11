@@ -78,7 +78,7 @@ graph TD
 
 The binary was brokered via `rundll32.exe` targeting multiple exported entry points (`#1`, `CreateFruityInstance`, `__dbk_fcall_wrapper`, `dbkFCallWrapperAddr`).
 
-* Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared directories` for dependent audio libraries:
+* Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared` directories for dependent audio libraries:
      * `dsp_ippv2_x64.dll`
      * `QuickFontCache_x64.dll`
      * `Blend2D.dll`
@@ -88,7 +88,7 @@ The binary was brokered via `rundll32.exe` targeting multiple exported entry poi
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Prior to secondary execution routines, the loader executes defensive heuristics:
 * **Active Sandbox Interference:** CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
-* **Locale & Timing Checks:** `Queried sortdefault.nls`, `tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
+* **Locale & Timing Checks:** Queried `sortdefault.nls`, `tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
 * **Security Context Discovery:** Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1082`).
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
