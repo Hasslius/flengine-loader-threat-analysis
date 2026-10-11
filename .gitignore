@@ -1,0 +1,12 @@
+*.dll
+*.exe
+*.sys
+*.bin
+*.zip
+*.7z
+*.rar
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
