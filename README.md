@@ -72,29 +72,31 @@ graph TD
 ```
 
 ### 1. Delivery & Execution Context (T1574.001)
-The binary was brokered via rundll32.exe targeting multiple exported entry points (#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr).
-* Dependency Probing: During startup, the process systematically probed paths across the local directory (C:\Users\<USER>\Desktop\), System32, and Shared directories for dependent audio libraries:
-* dsp_ippv2_x64.dll
-* QuickFontCache_x64.dll
-* Blend2D.dll
-* ILGlyphsEx.ilfont
-* Legitimate Artifact Coexistence: Process execution initialized DirectSound DllMain mutexes and read registry configuration under HKCU\Software\Image-Line\Shared\Paths. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
+
+The binary was brokered via `rundll32.exe` targeting multiple exported entry points `(#1, CreateFruityInstance, __dbk_fcall_wrapper, dbkFCallWrapperAddr)`.
+
+* Dependency Probing: During startup, the process systematically probed paths across the local directory (`C:\Users\<USER>\Desktop\`), `System32`, and `Shared directories` for dependent audio libraries:
+ * `dsp_ippv2_x64.dll`
+ * `QuickFontCache_x64.dll`
+ * `Blend2D.dll`
+ * `ILGlyphsEx.ilfont`
+* Legitimate Artifact Coexistence: Process execution initialized `DirectSound DllMain` mutexes and read registry configuration under `HKCU\Software\Image-Line\Shared\Paths`. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
 
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Before unpacking its core payload, the loader executes defensive heuristics:
 * **Active Sandbox Interference: CAPE explicitly registered an attempt to suspend Cuckoo monitoring threads to suppress API telemetry logging.
-* **Locale & Timing Checks: Queried sortdefault.nls, tzres.dll.mui, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
-* **Security Context Discovery: Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (T1033).
+* **Locale & Timing Checks: Queried `sortdefault.nls, tzres.dll.mui`, and system language registry keys. CAPE noted a potential timing-expiration condition where execution halted shortly after evaluating system time.
+* **Security Context Discovery: Inspected process token attributes to determine whether the execution context was running with administrative or elevated UAC privileges (`T1033`).
 
 ### 3. User-Mode Hook Evasion via Direct Syscalls (T1106)
-Standard Endpoint Detection and Response (EDR) platforms maintain process visibility by inserting inline user-mode hooks (JMP instructions) into functions exported by ntdll.dll.
-* The sandbox captured the signature direct_syscall_evasion.
-* The loader dynamically resolved System Service Numbers (SSNs) and issued assembly-level syscall instructions directly. This allowed thread and memory allocation calls to transition directly into kernel space, bypassing user-mode API monitors on that execution path.
+Standard Endpoint Detection and Response (EDR) platforms maintain process visibility by inserting inline user-mode hooks (`JMP` instructions) into functions exported by `ntdll.dll`.
+* The sandbox captured the signature `direct_syscall_evasion`.
+* The loader dynamically resolved System Service Numbers (SSNs) and issued assembly-level `syscall` instructions directly. This allowed thread and memory allocation calls to transition directly into kernel space, bypassing user-mode API monitors on that execution path.
 
-### 4. Code Cave Probing & Module Stomping (`T1055`)
+### 4. Code Cave Probing & Module Stomping (T1055)
 CAPE logged two high-severity memory events:
-* Creation of Read-Write-Execute (RWX) memory pages.
-* Repetitive allocation loops returning CONFLICTING_ADDRESSES across high-memory address space.
+* Creation of Read-Write-Execute (`RWX`) memory pages.
+* Repetitive allocation loops returning `CONFLICTING_ADDRESSES` across high-memory address space.
 * Investigative Assessment: This allocation pattern is consistent with address-space probing and code-cave scanning (module stomping). However, without comparative memory dumps proving that existing DLL text sections were overwritten and executed, this behaviour is formally classified as in-memory staging probing rather than confirmed code injection.
 
 ---
@@ -105,13 +107,13 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 
 | Destination Host / IP | Port / Protocol | Observed Role / Activity |
 | :--- | :--- | :--- |
-| 8.8.8.8 | 53 / UDP | Google Public DNS resolution. |
-| ctldl.windowsupdate.com (92.223.96.6) | 80 / HTTP | Microsoft Disallowed Certificate Trust List retrieval (disallowedcertstl.cab). |
-| ocsp.digicert.com (23.11.33.159) | 80 / HTTP | Online Certificate Status Protocol (OCSP) verification request. |
-| oneocsp.microsoft.com (204.79.197.203) | 80 / HTTP | Microsoft OCSP certificate validation request. |
-| 172.16.1.1 | 1688 / TCP | Internal private network connection (frequently associated with sandbox KMS activation). |
+| `8.8.8.8` | `53 / UDP` | Google Public DNS resolution. |
+| `ctldl.windowsupdate.com (92.223.96.6)` | `80 / HTTP` | Microsoft Disallowed Certificate Trust List retrieval (disallowedcertstl.cab). |
+| `ocsp.digicert.com (23.11.33.159)` | `80 / HTTP` | Online Certificate Status Protocol (OCSP) verification request. |
+| `oneocsp.microsoft.com (204.79.197.203)` | `80 / HTTP` | Microsoft OCSP certificate validation request. |
+| `172.16.1.1` | `1688 / TCP` | Internal private network connection (frequently associated with sandbox KMS activation). |
 
-* Embedded URL Patterns in Memory: Inspection of process memory revealed dormant URLs associated with Image-Line online services (api.soundcloud.com, auth.%s/fl-studio/token, credit.%s). These reflect format strings from legitimate audio software features and did not produce live outbound C2 traffic during the sandbox run.
+* Embedded URL Patterns in Memory: Inspection of process memory revealed dormant URLs associated with Image-Line online services (`api.soundcloud.com, auth.%s/fl-studio/token, credit.%s`). These reflect format strings from legitimate audio software features and did not produce live outbound C2 traffic during the sandbox run.
 
 ##Defensive Engineering Analysis
 
@@ -126,18 +128,17 @@ The evasive memory techniques observed in this sample highlight the critical rol
 
 #### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
 * **Scope:** HVCI uses Virtualisation-Based Security (VBS) to enforce Write XOR Execute page protections strictly within kernel mode.
-* **Limitation:** HVCI is not a universal user-mode code integrity control. While critical for protecting the kernel against vulnerable drivers (BYOVD), it does not natively prevent user-space processes from allocating private RWX memory or performing user-mode module stomping.
+* **Limitation:** HVCI is not a universal user-mode code integrity control. While critical for protecting the kernel against vulnerable drivers (BYOVD), it does not natively prevent user-space processes from allocating private `RWX` memory or performing user-mode module stomping.
 
 #### Hardware-Enforced Stack Protection (Intel CET / AMD Shadow Stack)
+* **Scope:** On supported hardware (Intel 11th Gen+ / AMD Ryzen 5000+), hardware shadow stacks maintain an isolated secondary record of return addresses. Function returns (`RET`) compare the stack address against the shadow stack; a discrepancy raises a hardware Control Protection Exception (`#CP`).
+* **Limitation:** Shadow stacks specifically mitigate return-address corruption (such as classic Return-Oriented Programming chains). They do not inherently block direct syscall execution, arbitrary jumps (`JMP`), or execution from modified code caves that preserve call-stack alignment.
+* **Default Configurations:** While enabled by default on clean installations of modern Windows 11 OEM builds, this feature is frequently disabled on consumer systems or upgrades due to compatibility conflicts with legacy third-party drivers (such as older peripheral software or legacy anti-cheat modules).
+
+#### Recommended Layered Controls
 * **1:** Application Control (WDAC): Enforce Windows Defender Application Control policies to prevent unsigned or invalidly signed binaries from executing via rundll32.exe.
 * **2** Attack Surface Reduction (ASR): Enable rules blocking execution of obfuscated scripts and child processes spawned from common administrative binaries.
 * **3** Kernel Telemetry & EDR: Maintain endpoint sensors that correlate kernel-level process creation and thread-injection telemetry (e.g., Microsoft-Windows-Threat-Intelligence ETW) rather than relying exclusively on user-mode ntdll.dll API hooks.
-
-#### Recommended Layered Controls
-Enabling Kernel-mode Hardware-enforced Stack Protection leverages CPU microarchitecture (Intel 11th Gen+ / AMD Ryzen 5000+) to instantiate a hardware-isolated **Shadow Stack**:
-* Every `CALL` instruction pushes return addresses to both the normal stack and the hardware-isolated shadow stack.
-* Every `RET` instruction compares both targets.
-* Any unauthorised control-flow jump (such as an in-memory ROP pivot or execution inside a stomped code cave) produces an immediate mismatch, triggering a hardware **Control Protection Exception (`#CP`)** that terminates the process before payload execution.
 
 ---
 
