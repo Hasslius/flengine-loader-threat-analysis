@@ -3,7 +3,7 @@
 ## Executive Summary
 This report analyses an evasive commodity dynamic link library (`FLEngine_x64.dll`) delivered via a trojanised digital audio workstation (DAW) release. Despite achieving a **0/70 (Undetected)** static detection rating on VirusTotal, dynamic execution in the CAPE sandbox revealed an evasive in-memory loader. 
 
-The binary deploys multi-stage evasion tactics—including direct kernel syscalls (`T1106`), Read-Write-Execute (RWX) memory stomping (`T1055`), and automated sandbox suppression (`T1497`)—to bypass user-mode Endpoint Detection and Response (EDR) hooks before harvesting local browser credentials and session tokens.
+The binary deploys multi-stage evasion tactics, including direct kernel syscalls (`T1106`), Read-Write-Execute (RWX) memory stomping (`T1055`), and automated sandbox suppression (`T1497`) to bypass user-mode Endpoint Detection and Response (EDR) hooks before harvesting local browser credentials and session tokens.
 
 ---
 
@@ -41,24 +41,25 @@ The binary deploys multi-stage evasion tactics—including direct kernel syscall
 
 ## Infection Vector & Execution Flow
 
-[ Trojanised DAW Repack ]
-│
-▼
-rundll32.exe loads FLEngine_x64.dll (T1574)
-│
-├──> 1. Probes legitimate sibling dependencies (dsp_ippv2_x64.dll, QuickFontCache_x64.dll)
-├──> 2. Sandbox & Host Enumeration (Cuckoo thread suspension, locale checks) (T1497)
-├──> 3. Direct Syscalls (Bypasses ntdll.dll AV/EDR hooks) (T1106)
-├──> 4. RWX Module Stomping (Searches for code caves via CONFLICTING_ADDRESSES) (T1055)
-│
-▼
-[ In-Memory Infostealer Payload Decryption ]
-│
-├──> Scrapes Chromium Stores (Cookies, Login Data, Web Data via DPAPI)
-├──> Sweeps Discord LevelDB tokens & Gaming sessions
-│
-▼
-[ Covert HTTP POST Exfiltration to C2 (T1071) ]
+```mermaid
+graph TD
+    A[Trojanized DAW Repack] --> B[rundll32.exe loads FLEngine_x64.dll - T1574]
+    
+    subgraph Execution & Evasion
+        B --> C[1. Probes Sibling DLLs: QuickFontCache, dsp_ippv2]
+        B --> D[2. Sandbox & Host Enumeration: Cuckoo checks, locale - T1497]
+        B --> E[3. Direct Syscalls: Bypasses ntdll.dll EDR hooks - T1106]
+        B --> F[4. RWX Module Stomping: Code cave probing - T1055]
+    end
+
+    E & F --> G[In-Memory Infostealer Decryption]
+
+    subgraph Harvesting & C2
+        G --> H[Harvests Chromium Stores: Cookies, Login Data via DPAPI]
+        G --> I[Sweeps Discord Tokens & Session State]
+        H & I --> J[Covert HTTP POST Exfiltration - T1071]
+    end
+```
 
 ### 1. Delivery & Execution Brokering (`T1574`)
 The primary payload masquerades as `FLEngine_x64.dll`, the core runtime sound processing module of FL Studio. 
