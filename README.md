@@ -19,7 +19,7 @@ Because memory-allocation probing and anti-monitoring routines coexist with auth
 | Attribute | Value |
 | :--- | :--- |
 | **Filename** | `FLEngine_x64.dll` |
-| **Reported Context** | FL Studio Audio Engine (Untrusted distribution / Potentially modified carrier) |
+| **Reported Context** | Purported FL Studio audio engine; provenance and distribution source unverified. |
 | **File Format** | PE32+ executable (DLL) (GUI) x86-64 |
 | **File Size** | 26,907,128 bytes (~25.66 MiB) |
 | **MD5** | `60a4e5191250b2f4dbaf33c1bc11ca7b` |
@@ -138,8 +138,8 @@ The memory-manipulation behaviour observed in this sample highlights the role of
 * **Limitation:** Shadow stacks specifically mitigate return-address corruption (such as classic Return-Oriented Programming chains). They do not inherently block direct syscall execution, arbitrary jumps (`JMP`), or memory modifications that preserve call-stack integrity.
 
 #### Layered Defensive Recommendations
-* **Application Control (WDAC):** Restrict execution to explicitly approved binaries, preventing untrusted DLLs from running via `rundll32.exe`.
-* **Process & Script Monitoring::** Deploy Attack Surface Reduction (ASR) rules and audit process-creation command lines involving administrative binaries executing unverified dynamic libraries.
+* **Application Control (WDAC):** Restrict execution to explicitly approved binaries, a suitably configured WDAC policy can restrict unauthorised executable and DLL loading, subject to the policy's scope and enforcement settings.
+* **Process & Script Monitoring:** Deploy Attack Surface Reduction (ASR) rules and audit process-creation command lines involving administrative binaries executing unverified dynamic libraries.
 * **Kernel Telemetry & EDR:** Maintain EDR sensors that monitor kernel-level thread creation and memory-protection transitions rather than relying solely on user-mode API hooking.
 
 ---
