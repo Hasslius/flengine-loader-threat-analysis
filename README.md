@@ -80,7 +80,7 @@ The binary was brokered via `rundll32.exe` targeting multiple exported entry poi
      * `QuickFontCache_x64.dll`
      * `Blend2D.dll`
      * `ILGlyphsEx.ilfont`
-* Legitimate Artifact Coexistence: Process execution initialized `DirectSound DllMain` mutexes and read registry configuration under `HKCU\Software\Image-Line\Shared\Paths`. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
+* Legitimate Artifact Coexistence: Process execution initialised `DirectSound DllMain` mutexes and read registry configuration under `HKCU\Software\Image-Line\Shared\Paths`. These indicators show that the sample retains core functional code from legitimate audio software, while housing modified loader routines.
 
 ### 2. Environmental Guardrails & Anti-Monitoring (T1497)
 Before unpacking its core payload, the loader executes defensive heuristics:
@@ -119,7 +119,7 @@ During execution, network traffic was captured across DNS, TCP, and HTTP protoco
 
 ### Hypervisor-Protected Code Integrity (HVCI / Memory Integrity)
 The absence of static detections across 70 engines on VirusTotal highlights common blind spots in signature-based screening:
-* **Binary Bloat (~25.66 MiB): Files exceeding standard heuristic inspection limits are frequently processed through truncated analysis pipelines to preserve cloud scanning throughput.
+* **Binary Bloat (~25.66 MiB):** Files exceeding standard heuristic inspection limits are frequently processed through truncated analysis pipelines to preserve cloud scanning throughput.
 * **Signature Modification:** The Authenticode status was flagged as `invalid-signature.` While signature invalidity alerts analysts to file tampering, it rarely generates an automated high-severity malware verdict without an existing byte signature.
 * **Packed Overlays:** High-entropy section data and appended overlays obscure payload intent until unpacked dynamically in memory.
 
@@ -136,9 +136,9 @@ The evasive memory techniques observed in this sample highlight the critical rol
 * **Default Configurations:** While enabled by default on clean installations of modern Windows 11 OEM builds, this feature is frequently disabled on consumer systems or upgrades due to compatibility conflicts with legacy third-party drivers (such as older peripheral software or legacy anti-cheat modules).
 
 #### Recommended Layered Controls
-* **1:** Application Control (WDAC): Enforce Windows Defender Application Control policies to prevent unsigned or invalidly signed binaries from executing via rundll32.exe.
-* **2** Attack Surface Reduction (ASR): Enable rules blocking execution of obfuscated scripts and child processes spawned from common administrative binaries.
-* **3** Kernel Telemetry & EDR: Maintain endpoint sensors that correlate kernel-level process creation and thread-injection telemetry (e.g., Microsoft-Windows-Threat-Intelligence ETW) rather than relying exclusively on user-mode ntdll.dll API hooks.
+* **Application Control (WDAC):** Enforce Windows Defender Application Control policies to prevent unsigned or invalidly signed binaries from executing via rundll32.exe.
+* **Attack Surface Reduction (ASR):** Enable rules blocking execution of obfuscated scripts and child processes spawned from common administrative binaries.
+* **Kernel Telemetry & EDR:** Maintain endpoint sensors that correlate kernel-level process creation and thread-injection telemetry (e.g., Microsoft-Windows-Threat-Intelligence ETW) rather than relying exclusively on user-mode ntdll.dll API hooks.
 
 ---
 
