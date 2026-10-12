@@ -96,6 +96,7 @@ During execution, the sandbox registered several defensive heuristics:
 * **Security Context Discovery:** Inspected process token attributes to check for administrative privileges or elevation status (`T1082`).
 
 > **Alternative Failure Mode (Invocation & Environment Constraints):**
+
 > While the telemetry aligns with sandbox evasion heuristics, an alternative operational explanation must be considered. FLEngine_x64.dll operates as a sub-engine tightly coupled to its primary host executable (FL64.exe), shared memory segments, and runtime licensing trees. When invoked in isolation via rundll32.exe, the absence of the parent process environment, missing GUI message loops, or unhandled dependency checks often leads to silent exception handling or clean early exit. Similarly, aggressive anti-hooking threads that target sandbox agent DLLs are a staple of commercial anti-tamper packers (e.g., VMProtect, Themida) commonly utilised in cracked audio releases to protect patching stubs, producing telemetry indistinguishable from malware anti-analysis routines.
 
 **Analytical Assessment on Payload Suppression:**  
