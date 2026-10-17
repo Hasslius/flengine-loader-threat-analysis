@@ -1,5 +1,5 @@
 # Threat Analysis: FLEngine_x64.dll Runtime Evasion & Memory Probing Analysis
-
+## **Notice:** This repository contains reverse-engineering documentation, indicators of compromise (IOCs), and behavioral telemetry conducted for defensive analysis and educational purposes only. No malicious binaries are hosted here. ##
 ## Executive Summary
 This report examines the 64-bit Windows dynamic-link library (`FLEngine_x64.dll`) using static metadata and dynamic sandbox telemetry from CAPE and Zenbox. At the time of analysis (October 2026), the sample received a reported **0/70 (Undetected)** static detection rating on VirusTotal. However, static scan results alone do not establish that a binary is benign.
 
